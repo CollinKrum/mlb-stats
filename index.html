@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MLB Stats Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #0a0e14;
+      --surface:   #111720;
+      --surface2:  #1a2232;
+      --border:    #1f2d42;
+      --accent:    #00d4ff;
+      --accent2:   #ff6b35;
+      --gold:      #f5c842;
+      --text:      #c8d8e8;
+      --text-dim:  #5a7a99;
+      --text-bright: #eaf4ff;
+      --green:     #00e676;
+      --red:       #ff4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Subtle field grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper { position: relative; z-index: 1; }
+
+    /* ── HEADER ── */
+    header {
+      padding: 28px 32px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      gap: 24px;
+      background: linear-gradient(180deg, rgba(0,212,255,0.06) 0%, transparent 100%);
+    }
+
+    .logo-block { line-height: 1; }
+
+    .logo-block .eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .logo-block h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 0.04em;
+      color: var(--text-bright);
+      line-height: 1;
+    }
+
+    .logo-block h1 span { color: var(--accent); }
+
+    .header-meta {
+      margin-left: auto;
+      text-align: right;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    #last-updated { color: var(--accent); }
+
+    /* ── TABS ── */
+    .tab-bar {
+      display: flex;
+      gap: 2px;
+      padding: 16px 32px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 10px 20px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      color: var(--text-dim);
+      background: transparent;
+      transition: all 0.15s ease;
+      position: relative;
+      bottom: -1px;
+    }
+
+    .tab:hover { color: var(--text); background: var(--surface2); }
+
+    .tab.active {
+      color: var(--accent);
+      background: var(--surface);
+      border-color: var(--border);
+      border-bottom-color: var(--surface);
+    }
+
+    /* ── CONTROLS ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 0 0 260px;
+    }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    #search-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 7px 10px 7px 34px;
+      color: var(--text-bright);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    #search-input:focus { border-color: var(--accent); }
+    #search-input::placeholder { color: var(--text-dim); }
+
+    .count-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-left: auto;
+    }
+
+    .count-badge span { color: var(--accent); font-weight: 600; }
+
+    .sort-hint {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+
+    /* ── TABLE CONTAINER ── */
+    .table-panel { display: none; }
+    .table-panel.active { display: block; }
+
+    .table-wrap {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: calc(100vh - 230px);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    th {
+      background: var(--surface2);
+      color: var(--text-dim);
+      font-weight: 600;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 12px;
+      text-align: right;
+      white-space: nowrap;
+      cursor: pointer;
+      border-bottom: 2px solid var(--border);
+      border-right: 1px solid var(--border);
+      user-select: none;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    th:first-child { text-align: left; min-width: 160px; position: sticky; left: 0; z-index: 11; background: var(--surface2); }
+    th:nth-child(2) { text-align: left; min-width: 90px; position: sticky; left: 160px; z-index: 11; background: var(--surface2); }
+
+    th:hover { color: var(--accent); background: var(--border); }
+    th.sort-asc, th.sort-desc { color: var(--accent); background: rgba(0,212,255,0.08); }
+    th.sort-asc::after { content: ' ▲'; font-size: 9px; }
+    th.sort-desc::after { content: ' ▼'; font-size: 9px; }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(31,45,66,0.6);
+      transition: background 0.1s;
+    }
+
+    tbody tr:hover { background: rgba(0,212,255,0.04); }
+    tbody tr:nth-child(even) { background: rgba(26,34,50,0.4); }
+    tbody tr:nth-child(even):hover { background: rgba(0,212,255,0.06); }
+
+    td {
+      padding: 8px 12px;
+      text-align: right;
+      white-space: nowrap;
+      color: var(--text);
+      border-right: 1px solid rgba(31,45,66,0.4);
+    }
+
+    td:first-child {
+      text-align: left;
+      color: var(--text-bright);
+      font-weight: 600;
+      position: sticky;
+      left: 0;
+      background: var(--bg);
+      z-index: 5;
+      border-right: 1px solid var(--border);
+    }
+
+    tbody tr:nth-child(even) td:first-child { background: #0c1119; }
+    tbody tr:hover td:first-child { background: #0f1820; }
+
+    td:nth-child(2) {
+      text-align: left;
+      position: sticky;
+      left: 160px;
+      background: var(--bg);
+      z-index: 5;
+      border-right: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+
+    tbody tr:nth-child(even) td:nth-child(2) { background: #0c1119; }
+    tbody tr:hover td:nth-child(2) { background: #0f1820; }
+
+    /* Highlight key stat columns */
+    td.highlight { color: var(--text-bright); }
+    td.top-val { color: var(--gold); font-weight: 600; }
+    td.good-val { color: var(--green); }
+    td.bad-val  { color: var(--red); }
+
+    /* ── LOADING / ERROR ── */
+    .state-msg {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 32px;
+      gap: 16px;
+      color: var(--text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+    }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg { color: var(--red); }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 12px 32px;
+      border-top: 1px solid var(--border);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      display: flex;
+      gap: 24px;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="logo-block">
+      <div class="eyebrow">Live Season Stats</div>
+      <h1>MLB <span>STATS</span></h1>
+    </div>
+    <div class="header-meta">
+      <div>Updated daily via pybaseball</div>
+      <div>Last refresh: <span id="last-updated">—</span></div>
+    </div>
+  </header>
+
+  <div class="tab-bar" id="tab-bar">
+    <button class="tab active" data-tab="batting">⚾ Full Season Batting</button>
+    <button class="tab" data-tab="all-pitchers">All Pitchers</button>
+    <button class="tab" data-tab="starters">Starters</button>
+    <button class="tab" data-tab="relievers">Relievers</button>
+  </div>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="Search player..." />
+    </div>
+    <span class="sort-hint">Click any column header to sort</span>
+    <div class="count-badge">Showing <span id="row-count">—</span> players</div>
+  </div>
+
+  <!-- Tab panels -->
+  <div class="table-panel active" id="panel-batting">
+    <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading batting stats...</div></div></div>
+  </div>
+  <div class="table-panel" id="panel-all-pitchers">
+    <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading pitcher stats...</div></div></div>
+  </div>
+  <div class="table-panel" id="panel-starters">
+    <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading starter stats...</div></div></div>
+  </div>
+  <div class="table-panel" id="panel-relievers">
+    <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading reliever stats...</div></div></div>
+  </div>
+
+  <footer>
+    <span>DATA SOURCE: GOOGLE SHEETS / PYBASEBALL / BASEBALL REFERENCE</span>
+    <span>2026 MLB SEASON</span>
+  </footer>
+
+</div>
+
+<script>
+// ── CONFIG — fill these in ──────────────────────────────────────────────
+const SHEET_ID = '1PHrPbnG7oB6RFPtOilw0DskShhiD7XL4IP0AAJQLj4k';
+
+const TABS_CONFIG = {
+  'batting':      { gid: '2099442869',          panel: 'panel-batting',       label: 'batting' },
+  'all-pitchers': { gid: '1960706695',  panel: 'panel-all-pitchers', label: 'pitchers' },
+  'starters':     { gid: '901126911',      panel: 'panel-starters',     label: 'starters' },
+  'relievers':    { gid: '413196017',      panel: 'panel-relievers',    label: 'relievers' },
+  'Sheet1':  { gid: '0',           panel: 'panel-Sheet1',      label: 'Hot Hitters' },
+  'Pitchers':  { gid: '954418740',   panel: 'panel-Pitchers',    label: 'Hot Pitchers' },
+};
+// ────────────────────────────────────────────────────────────────────────
+
+// State
+let activeTab     = 'batting';
+let tableData     = {};   // { tabKey: { headers, rows } }
+let sortState     = {};   // { tabKey: { col, asc } }
+let filteredRows  = {};   // { tabKey: rows[] }
+
+// Numeric columns — right-align and color-code
+const NUM_COLS = new Set([
+  'G','PA','AB','H','1B','2B','3B','HR','R','RBI','BB','SO','HBP','SF','SB','CS','TB','XBH',
+  'AVG','OBP','SLG','OPS','ISO','BABIP','BB%','K%','BB/K','HR/PA','XBH%',
+  'H/G','HR/G','RBI/G','SB_pct','TrendScore',
+  'IP','IP/G','BF','ER','ERA','WHIP','K9','BB9','HR9','H9','K/BB','HR/BF',
+  'FIP_raw','LOB%','W','L','SV','HLD','BS','CG','SHO','GS','GS_pct',
+]);
+
+// High-value cols (higher = better for batters)
+const HIGH_GOOD = new Set(['HR','RBI','OPS','AVG','OBP','SLG','ISO','TrendScore','SB','H','TB','R','BB','XBH']);
+// Low-value cols (lower = better for pitchers)
+const LOW_GOOD  = new Set(['ERA','WHIP','BB9','HR9','FIP_raw']);
+
+async function fetchSheet(tabKey) {
+  const { gid } = TABS_CONFIG[tabKey];
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = parseCSVLine(lines[0]);
+  const rows = lines.slice(1).map(l => parseCSVLine(l));
+  return { headers, rows };
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function toNum(val) {
+  const n = parseFloat(val);
+  return isNaN(n) ? null : n;
+}
+
+function renderTable(tabKey) {
+  const { headers, rows } = tableData[tabKey];
+  const panel = document.getElementById(TABS_CONFIG[tabKey].panel);
+  const wrap  = panel.querySelector('.table-wrap');
+
+  // Apply sort
+  const ss = sortState[tabKey];
+  let sorted = [...rows];
+  if (ss) {
+    const ci = headers.indexOf(ss.col);
+    sorted.sort((a, b) => {
+      const na = toNum(a[ci]), nb = toNum(b[ci]);
+      if (na !== null && nb !== null) return ss.asc ? na - nb : nb - na;
+      return ss.asc ? String(a[ci]).localeCompare(String(b[ci])) : String(b[ci]).localeCompare(String(a[ci]));
+    });
+  }
+
+  // Apply search filter
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const nameIdx = headers.indexOf('Name');
+  const filtered = q
+    ? sorted.filter(r => (r[nameIdx] || '').toLowerCase().includes(q))
+    : sorted;
+
+  filteredRows[tabKey] = filtered;
+  if (tabKey === activeTab) {
+    document.getElementById('row-count').textContent = filtered.length;
+  }
+
+  // Compute per-column min/max for color coding
+  const colStats = headers.map((h, ci) => {
+    if (!NUM_COLS.has(h)) return null;
+    const vals = filtered.map(r => toNum(r[ci])).filter(v => v !== null);
+    if (!vals.length) return null;
+    return { min: Math.min(...vals), max: Math.max(...vals) };
+  });
+
+  // Build HTML
+  let html = '<table><thead><tr>';
+  headers.forEach((h, ci) => {
+    let cls = '';
+    if (ss && ss.col === h) cls = ss.asc ? 'sort-asc' : 'sort-desc';
+    html += `<th class="${cls}" data-col="${h}" data-tab="${tabKey}">${h}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  filtered.forEach(row => {
+    html += '<tr>';
+    row.forEach((val, ci) => {
+      const h   = headers[ci];
+      const num = toNum(val);
+      let cls   = '';
+
+      if (num !== null && colStats[ci]) {
+        const { min, max } = colStats[ci];
+        const range = max - min;
+        if (range > 0) {
+          const pct = (num - min) / range;
+          if (HIGH_GOOD.has(h)) {
+            if (pct >= 0.95) cls = 'top-val';
+            else if (pct >= 0.75) cls = 'good-val';
+          } else if (LOW_GOOD.has(h) && num > 0) {
+            if (pct <= 0.05) cls = 'top-val';
+            else if (pct <= 0.25) cls = 'good-val';
+            else if (pct >= 0.85) cls = 'bad-val';
+          }
+        }
+      }
+
+      const display = val === '0.0' || val === '0' ? (NUM_COLS.has(h) ? val : val) : val;
+      html += `<td class="${cls}">${display}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+
+  // Attach sort handlers
+  wrap.querySelectorAll('th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      const tk  = th.dataset.tab;
+      const cur = sortState[tk];
+      sortState[tk] = cur && cur.col === col ? { col, asc: !cur.asc } : { col, asc: false };
+      renderTable(tk);
+    });
+  });
+}
+
+async function loadTab(tabKey) {
+  if (tableData[tabKey]) {
+    renderTable(tabKey);
+    return;
+  }
+  const panel = document.getElementById(TABS_CONFIG[tabKey].panel);
+  panel.querySelector('.table-wrap').innerHTML =
+    '<div class="state-msg"><div class="spinner"></div><div>Loading...</div></div>';
+  try {
+    tableData[tabKey] = await fetchSheet(tabKey);
+    renderTable(tabKey);
+  } catch (e) {
+    panel.querySelector('.table-wrap').innerHTML =
+      `<div class="state-msg error-msg">
+        <div>⚠ Could not load data</div>
+        <div style="font-size:10px;margin-top:8px">${e.message}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Make sure the sheet is shared publicly (Anyone with link → Viewer)</div>
+      </div>`;
+  }
+}
+
+// ── TAB SWITCHING ────────────────────────────────────────────────────────
+document.getElementById('tab-bar').addEventListener('click', e => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+  const key = btn.dataset.tab;
+  if (key === activeTab) return;
+
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.table-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(TABS_CONFIG[key].panel).classList.add('active');
+  activeTab = key;
+
+  const fr = filteredRows[key];
+  document.getElementById('row-count').textContent = fr ? fr.length : '—';
+  loadTab(key);
+});
+
+// ── SEARCH ───────────────────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', () => {
+  if (tableData[activeTab]) renderTable(activeTab);
+});
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+document.getElementById('last-updated').textContent = new Date().toLocaleDateString('en-US', {
+  month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+});
+loadTab('batting');
+</script>
+</body>
+</html>
