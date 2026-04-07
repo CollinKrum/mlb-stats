@@ -32,7 +32,6 @@
       overflow-x: hidden;
     }
 
-    /* Subtle field grid background */
     body::before {
       content: '';
       position: fixed;
@@ -47,7 +46,6 @@
 
     .wrapper { position: relative; z-index: 1; }
 
-    /* ── HEADER ── */
     header {
       padding: 28px 32px 20px;
       border-bottom: 1px solid var(--border);
@@ -89,12 +87,12 @@
 
     #last-updated { color: var(--accent); }
 
-    /* ── TABS ── */
     .tab-bar {
       display: flex;
       gap: 2px;
       padding: 16px 32px 0;
       border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
     }
 
     .tab {
@@ -123,7 +121,6 @@
       border-bottom-color: var(--surface);
     }
 
-    /* ── CONTROLS ── */
     .controls {
       display: flex;
       align-items: center;
@@ -180,7 +177,6 @@
       letter-spacing: 0.08em;
     }
 
-    /* ── TABLE CONTAINER ── */
     .table-panel { display: none; }
     .table-panel.active { display: block; }
 
@@ -220,8 +216,23 @@
       transition: color 0.15s, background 0.15s;
     }
 
-    th:first-child { text-align: left; min-width: 160px; position: sticky; left: 0; z-index: 11; background: var(--surface2); }
-    th:nth-child(2) { text-align: left; min-width: 90px; position: sticky; left: 160px; z-index: 11; background: var(--surface2); }
+    th:first-child {
+      text-align: left;
+      min-width: 160px;
+      position: sticky;
+      left: 0;
+      z-index: 11;
+      background: var(--surface2);
+    }
+
+    th:nth-child(2) {
+      text-align: left;
+      min-width: 90px;
+      position: sticky;
+      left: 160px;
+      z-index: 11;
+      background: var(--surface2);
+    }
 
     th:hover { color: var(--accent); background: var(--border); }
     th.sort-asc, th.sort-desc { color: var(--accent); background: rgba(0,212,255,0.08); }
@@ -272,13 +283,11 @@
     tbody tr:nth-child(even) td:nth-child(2) { background: #0c1119; }
     tbody tr:hover td:nth-child(2) { background: #0f1820; }
 
-    /* Highlight key stat columns */
     td.highlight { color: var(--text-bright); }
     td.top-val { color: var(--gold); font-weight: 600; }
     td.good-val { color: var(--green); }
     td.bad-val  { color: var(--red); }
 
-    /* ── LOADING / ERROR ── */
     .state-msg {
       display: flex;
       flex-direction: column;
@@ -293,7 +302,8 @@
     }
 
     .spinner {
-      width: 32px; height: 32px;
+      width: 32px;
+      height: 32px;
       border: 2px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
@@ -304,7 +314,6 @@
 
     .error-msg { color: var(--red); }
 
-    /* ── FOOTER ── */
     footer {
       padding: 12px 32px;
       border-top: 1px solid var(--border);
@@ -314,11 +323,11 @@
       letter-spacing: 0.08em;
       display: flex;
       gap: 24px;
+      flex-wrap: wrap;
     }
 
     footer a { color: var(--accent); text-decoration: none; }
 
-    /* scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -340,7 +349,9 @@
   </header>
 
   <div class="tab-bar" id="tab-bar">
-    <button class="tab active" data-tab="batting">⚾ Full Season Batting</button>
+    <button class="tab active" data-tab="recent-hot-hitters">⚾ Recent Hot Hitters</button>
+    <button class="tab" data-tab="batting">Full Season Batting</button>
+    <button class="tab" data-tab="recent-hot-pitchers">Recent Hot Pitchers</button>
     <button class="tab" data-tab="all-pitchers">All Pitchers</button>
     <button class="tab" data-tab="starters">Starters</button>
     <button class="tab" data-tab="relievers">Relievers</button>
@@ -357,16 +368,26 @@
     <div class="count-badge">Showing <span id="row-count">—</span> players</div>
   </div>
 
-  <!-- Tab panels -->
-  <div class="table-panel active" id="panel-batting">
+  <div class="table-panel active" id="panel-recent-hot-hitters">
+    <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading recent hot hitters...</div></div></div>
+  </div>
+
+  <div class="table-panel" id="panel-batting">
     <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading batting stats...</div></div></div>
   </div>
+
+  <div class="table-panel" id="panel-recent-hot-pitchers">
+    <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading recent hot pitchers...</div></div></div>
+  </div>
+
   <div class="table-panel" id="panel-all-pitchers">
     <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading pitcher stats...</div></div></div>
   </div>
+
   <div class="table-panel" id="panel-starters">
     <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading starter stats...</div></div></div>
   </div>
+
   <div class="table-panel" id="panel-relievers">
     <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading reliever stats...</div></div></div>
   </div>
@@ -379,38 +400,38 @@
 </div>
 
 <script>
-// ── CONFIG — fill these in ──────────────────────────────────────────────
 const SHEET_ID = '1PHrPbnG7oB6RFPtOilw0DskShhiD7XL4IP0AAJQLj4k';
 
 const TABS_CONFIG = {
-  'batting':      { gid: '2099442869',          panel: 'panel-batting',       label: 'batting' },
-  'all-pitchers': { gid: '1960706695',  panel: 'panel-all-pitchers', label: 'pitchers' },
-  'starters':     { gid: '901126911',      panel: 'panel-starters',     label: 'starters' },
-  'relievers':    { gid: '413196017',      panel: 'panel-relievers',    label: 'relievers' },
-  'Sheet1':  { gid: '0',           panel: 'panel-Sheet1',      label: 'Hot Hitters' },
-  'Pitchers':  { gid: '954418740',   panel: 'panel-Pitchers',    label: 'Hot Pitchers' },
+  'recent-hot-hitters': { gid: '0',          panel: 'panel-recent-hot-hitters',  label: 'Recent Hot Hitters' },
+  'batting':            { gid: '2099442869', panel: 'panel-batting',              label: 'Full Season Batting' },
+  'recent-hot-pitchers':{ gid: '954418740',  panel: 'panel-recent-hot-pitchers', label: 'Recent Hot Pitchers' },
+  'all-pitchers':       { gid: '1960706695', panel: 'panel-all-pitchers',         label: 'All Pitchers' },
+  'starters':           { gid: '901126911',  panel: 'panel-starters',             label: 'Starters' },
+  'relievers':          { gid: '413196017',  panel: 'panel-relievers',            label: 'Relievers' },
 };
-// ────────────────────────────────────────────────────────────────────────
 
-// State
-let activeTab     = 'batting';
-let tableData     = {};   // { tabKey: { headers, rows } }
-let sortState     = {};   // { tabKey: { col, asc } }
-let filteredRows  = {};   // { tabKey: rows[] }
+let activeTab    = 'recent-hot-hitters';
+let tableData    = {};
+let sortState    = {};
+let filteredRows = {};
 
-// Numeric columns — right-align and color-code
 const NUM_COLS = new Set([
   'G','PA','AB','H','1B','2B','3B','HR','R','RBI','BB','SO','HBP','SF','SB','CS','TB','XBH',
   'AVG','OBP','SLG','OPS','ISO','BABIP','BB%','K%','BB/K','HR/PA','XBH%',
   'H/G','HR/G','RBI/G','SB_pct','TrendScore',
-  'IP','IP/G','BF','ER','ERA','WHIP','K9','BB9','HR9','H9','K/BB','HR/BF',
-  'FIP_raw','LOB%','W','L','SV','HLD','BS','CG','SHO','GS','GS_pct',
+  'IP','IP/G','BF','ER','ERA','WHIP','K9','BB9','HR9','H9','K/BB','KBB','HR/BF',
+  'FIP_raw','FIP','LOB%','W','L','SV','HLD','BS','CG','SHO','GS','GS_pct'
 ]);
 
-// High-value cols (higher = better for batters)
-const HIGH_GOOD = new Set(['HR','RBI','OPS','AVG','OBP','SLG','ISO','TrendScore','SB','H','TB','R','BB','XBH']);
-// Low-value cols (lower = better for pitchers)
-const LOW_GOOD  = new Set(['ERA','WHIP','BB9','HR9','FIP_raw']);
+const HIGH_GOOD = new Set([
+  'HR','RBI','OPS','AVG','OBP','SLG','ISO','TrendScore','SB','H','TB','R','BB','XBH',
+  'IP','SO','K9','K/BB','KBB'
+]);
+
+const LOW_GOOD = new Set([
+  'ERA','WHIP','BB9','HR9','FIP_raw','FIP','ER','H'
+]);
 
 async function fetchSheet(tabKey) {
   const { gid } = TABS_CONFIG[tabKey];
@@ -422,60 +443,108 @@ async function fetchSheet(tabKey) {
 }
 
 function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = parseCSVLine(lines[0]);
-  const rows = lines.slice(1).map(l => parseCSVLine(l));
-  return { headers, rows };
-}
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
 
-function parseCSVLine(line) {
-  const result = [];
-  let cur = '', inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') { inQ = !inQ; }
-    else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
-    else { cur += c; }
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        cell += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      row.push(cell.trim());
+      cell = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') i++;
+      row.push(cell.trim());
+      if (row.length > 1 || row[0] !== '') rows.push(row);
+      row = [];
+      cell = '';
+    } else {
+      cell += char;
+    }
   }
-  result.push(cur.trim());
-  return result;
+
+  if (cell.length > 0 || row.length > 0) {
+    row.push(cell.trim());
+    rows.push(row);
+  }
+
+  const headers = rows[0] || [];
+  const dataRows = rows.slice(1);
+  return { headers, rows: dataRows };
 }
 
 function toNum(val) {
-  const n = parseFloat(val);
+  if (val === null || val === undefined) return null;
+  const cleaned = String(val).replace(/[%,$]/g, '').trim();
+  const n = parseFloat(cleaned);
   return isNaN(n) ? null : n;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getSearchColumnIndex(headers) {
+  const possible = ['Name', 'Player', 'PLAYER', 'player_name', 'player'];
+  for (const col of possible) {
+    const idx = headers.indexOf(col);
+    if (idx !== -1) return idx;
+  }
+  return 0;
 }
 
 function renderTable(tabKey) {
   const { headers, rows } = tableData[tabKey];
   const panel = document.getElementById(TABS_CONFIG[tabKey].panel);
-  const wrap  = panel.querySelector('.table-wrap');
+  const wrap = panel.querySelector('.table-wrap');
 
-  // Apply sort
   const ss = sortState[tabKey];
   let sorted = [...rows];
+
   if (ss) {
     const ci = headers.indexOf(ss.col);
     sorted.sort((a, b) => {
-      const na = toNum(a[ci]), nb = toNum(b[ci]);
-      if (na !== null && nb !== null) return ss.asc ? na - nb : nb - na;
-      return ss.asc ? String(a[ci]).localeCompare(String(b[ci])) : String(b[ci]).localeCompare(String(a[ci]));
+      const na = toNum(a[ci]);
+      const nb = toNum(b[ci]);
+
+      if (na !== null && nb !== null) {
+        return ss.asc ? na - nb : nb - na;
+      }
+
+      const av = String(a[ci] ?? '');
+      const bv = String(b[ci] ?? '');
+      return ss.asc ? av.localeCompare(bv) : bv.localeCompare(av);
     });
   }
 
-  // Apply search filter
   const q = document.getElementById('search-input').value.toLowerCase();
-  const nameIdx = headers.indexOf('Name');
+  const nameIdx = getSearchColumnIndex(headers);
+
   const filtered = q
-    ? sorted.filter(r => (r[nameIdx] || '').toLowerCase().includes(q))
+    ? sorted.filter(r => String(r[nameIdx] || '').toLowerCase().includes(q))
     : sorted;
 
   filteredRows[tabKey] = filtered;
+
   if (tabKey === activeTab) {
     document.getElementById('row-count').textContent = filtered.length;
   }
 
-  // Compute per-column min/max for color coding
   const colStats = headers.map((h, ci) => {
     if (!NUM_COLS.has(h)) return null;
     const vals = filtered.map(r => toNum(r[ci])).filter(v => v !== null);
@@ -483,31 +552,35 @@ function renderTable(tabKey) {
     return { min: Math.min(...vals), max: Math.max(...vals) };
   });
 
-  // Build HTML
   let html = '<table><thead><tr>';
-  headers.forEach((h, ci) => {
+
+  headers.forEach((h) => {
     let cls = '';
     if (ss && ss.col === h) cls = ss.asc ? 'sort-asc' : 'sort-desc';
-    html += `<th class="${cls}" data-col="${h}" data-tab="${tabKey}">${h}</th>`;
+    html += `<th class="${cls}" data-col="${escapeHtml(h)}" data-tab="${escapeHtml(tabKey)}">${escapeHtml(h)}</th>`;
   });
+
   html += '</tr></thead><tbody>';
 
   filtered.forEach(row => {
     html += '<tr>';
+
     row.forEach((val, ci) => {
-      const h   = headers[ci];
+      const h = headers[ci];
       const num = toNum(val);
-      let cls   = '';
+      let cls = '';
 
       if (num !== null && colStats[ci]) {
         const { min, max } = colStats[ci];
         const range = max - min;
+
         if (range > 0) {
           const pct = (num - min) / range;
+
           if (HIGH_GOOD.has(h)) {
             if (pct >= 0.95) cls = 'top-val';
             else if (pct >= 0.75) cls = 'good-val';
-          } else if (LOW_GOOD.has(h) && num > 0) {
+          } else if (LOW_GOOD.has(h)) {
             if (pct <= 0.05) cls = 'top-val';
             else if (pct <= 0.25) cls = 'good-val';
             else if (pct >= 0.85) cls = 'bad-val';
@@ -515,20 +588,19 @@ function renderTable(tabKey) {
         }
       }
 
-      const display = val === '0.0' || val === '0' ? (NUM_COLS.has(h) ? val : val) : val;
-      html += `<td class="${cls}">${display}</td>`;
+      html += `<td class="${cls}">${escapeHtml(val ?? '')}</td>`;
     });
+
     html += '</tr>';
   });
 
   html += '</tbody></table>';
   wrap.innerHTML = html;
 
-  // Attach sort handlers
   wrap.querySelectorAll('th').forEach(th => {
     th.addEventListener('click', () => {
       const col = th.dataset.col;
-      const tk  = th.dataset.tab;
+      const tk = th.dataset.tab;
       const cur = sortState[tk];
       sortState[tk] = cur && cur.col === col ? { col, asc: !cur.asc } : { col, asc: false };
       renderTable(tk);
@@ -541,9 +613,11 @@ async function loadTab(tabKey) {
     renderTable(tabKey);
     return;
   }
+
   const panel = document.getElementById(TABS_CONFIG[tabKey].panel);
   panel.querySelector('.table-wrap').innerHTML =
     '<div class="state-msg"><div class="spinner"></div><div>Loading...</div></div>';
+
   try {
     tableData[tabKey] = await fetchSheet(tabKey);
     renderTable(tabKey);
@@ -551,40 +625,45 @@ async function loadTab(tabKey) {
     panel.querySelector('.table-wrap').innerHTML =
       `<div class="state-msg error-msg">
         <div>⚠ Could not load data</div>
-        <div style="font-size:10px;margin-top:8px">${e.message}</div>
+        <div style="font-size:10px;margin-top:8px">${escapeHtml(e.message)}</div>
         <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Make sure the sheet is shared publicly (Anyone with link → Viewer)</div>
       </div>`;
   }
 }
 
-// ── TAB SWITCHING ────────────────────────────────────────────────────────
 document.getElementById('tab-bar').addEventListener('click', e => {
   const btn = e.target.closest('.tab');
   if (!btn) return;
+
   const key = btn.dataset.tab;
   if (key === activeTab) return;
 
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.table-panel').forEach(p => p.classList.remove('active'));
+
   btn.classList.add('active');
   document.getElementById(TABS_CONFIG[key].panel).classList.add('active');
   activeTab = key;
 
   const fr = filteredRows[key];
   document.getElementById('row-count').textContent = fr ? fr.length : '—';
+
   loadTab(key);
 });
 
-// ── SEARCH ───────────────────────────────────────────────────────────────
 document.getElementById('search-input').addEventListener('input', () => {
   if (tableData[activeTab]) renderTable(activeTab);
 });
 
-// ── INIT ─────────────────────────────────────────────────────────────────
-document.getElementById('last-updated').textContent = new Date().toLocaleDateString('en-US', {
-  month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+document.getElementById('last-updated').textContent = new Date().toLocaleString('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
 });
-loadTab('batting');
+
+loadTab('recent-hot-hitters');
 </script>
 </body>
 </html>
