@@ -2,22 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>MLB Stats Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --bg:        #0a0e14;
-      --surface:   #111720;
-      --surface2:  #1a2232;
-      --border:    #1f2d42;
-      --accent:    #00d4ff;
-      --gold:      #f5c842;
-      --text:      #c8d8e8;
-      --text-dim:  #5a7a99;
+      --bg:         #0a0e14;
+      --surface:    #111720;
+      --surface2:   #1a2232;
+      --border:     #1f2d42;
+      --accent:     #00d4ff;
+      --gold:       #f5c842;
+      --text:       #c8d8e8;
+      --text-dim:   #5a7a99;
       --text-bright: #eaf4ff;
-      --green:     #00e676;
-      --red:       #ff4444;
+      --green:      #00e676;
+      --red:        #ff4444;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,6 +29,7 @@
       font-size: 13px;
       min-height: 100vh;
       overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body::before {
@@ -43,14 +44,14 @@
       z-index: 0;
     }
 
-    .wrapper { position: relative; z-index: 1; }
+    .wrapper { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
 
     header {
-      padding: 28px 32px 20px;
+      padding: 20px 20px 15px;
       border-bottom: 1px solid var(--border);
       display: flex;
-      align-items: flex-end;
-      gap: 24px;
+      flex-direction: column;
+      gap: 12px;
       background: linear-gradient(180deg, rgba(0,212,255,0.06) 0%, transparent 100%);
     }
 
@@ -65,7 +66,7 @@
 
     .logo-block h1 {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 48px;
+      font-size: 36px;
       letter-spacing: 0.04em;
       color: var(--text-bright);
       line-height: 1;
@@ -74,23 +75,26 @@
     .logo-block h1 span { color: var(--accent); }
 
     .header-meta {
-      margin-left: auto;
-      text-align: right;
+      text-align: left;
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-dim);
       line-height: 1.7;
     }
 
     #last-updated { color: var(--accent); }
 
+    /* Scrollable Tab Bar for Mobile */
     .tab-bar {
       display: flex;
       gap: 2px;
-      padding: 16px 32px 0;
+      padding: 10px 15px 0;
       border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
+    .tab-bar::-webkit-scrollbar { display: none; }
 
     .tab {
       font-family: 'IBM Plex Mono', monospace;
@@ -108,6 +112,7 @@
       position: relative;
       bottom: -1px;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .tab:hover { color: var(--text); background: var(--surface2); }
@@ -120,15 +125,14 @@
 
     .controls {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       gap: 12px;
-      padding: 14px 32px;
+      padding: 15px;
       border-bottom: 1px solid var(--border);
       background: var(--surface);
-      flex-wrap: wrap;
     }
 
-    .search-wrap { position: relative; flex: 0 0 260px; }
+    .search-wrap { position: relative; width: 100%; }
 
     .search-wrap svg {
       position: absolute;
@@ -144,24 +148,21 @@
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 4px;
-      padding: 7px 10px 7px 34px;
+      padding: 10px 10px 10px 34px;
       color: var(--text-bright);
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 12px;
+      font-size: 14px; /* Larger to prevent iOS zoom */
       outline: none;
       transition: border-color 0.15s;
     }
 
     #search-input:focus { border-color: var(--accent); }
-    #search-input::placeholder { color: var(--text-dim); }
 
     .count-badge {
       font-family: 'IBM Plex Mono', monospace;
       font-size: 11px;
       color: var(--text-dim);
-      margin-left: auto;
     }
-
     .count-badge span { color: var(--accent); font-weight: 600; }
 
     .sort-hint {
@@ -177,7 +178,8 @@
     .table-wrap {
       overflow-x: auto;
       overflow-y: auto;
-      max-height: calc(100vh - 240px);
+      max-height: calc(100vh - 280px);
+      -webkit-overflow-scrolling: touch;
     }
 
     table {
@@ -196,67 +198,47 @@
       font-size: 10px;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding: 10px 12px;
+      padding: 12px 10px;
       text-align: right;
       white-space: nowrap;
       cursor: pointer;
       border-bottom: 2px solid var(--border);
       border-right: 1px solid var(--border);
       user-select: none;
-      transition: color 0.15s, background 0.15s;
     }
 
-    th:first-child  { text-align: left; min-width: 160px; position: sticky; left: 0;     z-index: 11; background: var(--surface2); }
-    th:nth-child(2) { text-align: left; min-width: 100px; position: sticky; left: 160px; z-index: 11; background: var(--surface2); }
-
-    th:hover { color: var(--accent); background: var(--border); }
-    th.sort-asc, th.sort-desc { color: var(--accent); background: rgba(0,212,255,0.08); }
-    th.sort-asc::after  { content: ' ▲'; font-size: 9px; }
-    th.sort-desc::after { content: ' ▼'; font-size: 9px; }
-
-    tbody tr {
-      border-bottom: 1px solid rgba(31,45,66,0.6);
-      transition: background 0.1s;
+    /* Sticky Columns (Name & Team) */
+    th:first-child, td:first-child {
+      text-align: left;
+      min-width: 120px;
+      position: sticky;
+      left: 0;
+      z-index: 11;
+      background: var(--bg);
     }
+    th:first-child { background: var(--surface2); }
 
-    tbody tr:hover { background: rgba(0,212,255,0.04); }
-    tbody tr:nth-child(even) { background: rgba(26,34,50,0.4); }
-    tbody tr:nth-child(even):hover { background: rgba(0,212,255,0.06); }
+    th:nth-child(2), td:nth-child(2) {
+      text-align: left;
+      min-width: 70px;
+      position: sticky;
+      left: 120px;
+      z-index: 11;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+    }
+    th:nth-child(2) { background: var(--surface2); }
+
+    tbody tr:nth-child(even) td:first-child,
+    tbody tr:nth-child(even) td:nth-child(2) { background: #0c1119; }
 
     td {
-      padding: 8px 12px;
+      padding: 10px 12px;
       text-align: right;
       white-space: nowrap;
       color: var(--text);
       border-right: 1px solid rgba(31,45,66,0.4);
     }
-
-    td:first-child {
-      text-align: left;
-      color: var(--text-bright);
-      font-weight: 600;
-      position: sticky;
-      left: 0;
-      background: var(--bg);
-      z-index: 5;
-      border-right: 1px solid var(--border);
-    }
-
-    tbody tr:nth-child(even) td:first-child { background: #0c1119; }
-    tbody tr:hover td:first-child { background: #0f1820; }
-
-    td:nth-child(2) {
-      text-align: left;
-      position: sticky;
-      left: 160px;
-      background: var(--bg);
-      z-index: 5;
-      border-right: 1px solid var(--border);
-      color: var(--text-dim);
-    }
-
-    tbody tr:nth-child(even) td:nth-child(2) { background: #0c1119; }
-    tbody tr:hover td:nth-child(2) { background: #0f1820; }
 
     td.top-val  { color: var(--gold);  font-weight: 600; }
     td.good-val { color: var(--green); }
@@ -267,12 +249,11 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 80px 32px;
+      padding: 60px 20px;
       gap: 16px;
       color: var(--text-dim);
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 12px;
-      letter-spacing: 0.08em;
+      text-align: center;
     }
 
     .spinner {
@@ -284,23 +265,36 @@
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
-    .error-msg { color: var(--red); }
 
     footer {
-      padding: 12px 32px;
+      padding: 15px 20px;
       border-top: 1px solid var(--border);
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text-dim);
-      letter-spacing: 0.08em;
       display: flex;
-      gap: 24px;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    /* Desktop Adjustments */
+    @media (min-width: 768px) {
+      header { flex-direction: row; align-items: flex-end; padding: 28px 32px 20px; gap: 24px; }
+      .logo-block h1 { font-size: 48px; }
+      .header-meta { text-align: right; margin-left: auto; font-size: 11px; }
+      .controls { flex-direction: row; padding: 14px 32px; align-items: center; }
+      .search-wrap { flex: 0 0 260px; }
+      .count-badge { margin-left: auto; }
+      footer { flex-direction: row; padding: 12px 32px; font-size: 10px; gap: 24px; }
+      th:first-child, td:first-child { min-width: 160px; }
+      th:nth-child(2), td:nth-child(2) { left: 160px; min-width: 100px; }
+      .table-wrap { max-height: calc(100vh - 240px); }
     }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
   </style>
 </head>
 <body>
@@ -333,10 +327,11 @@
       </svg>
       <input type="text" id="search-input" placeholder="Search player..." />
     </div>
-    <span class="sort-hint">Click any column header to sort</span>
+    <span class="sort-hint">Tap header to sort</span>
     <div class="count-badge">Showing <span id="row-count">—</span> players</div>
   </div>
 
+  <!-- Panels remain same -->
   <div class="table-panel active" id="panel-hot-hitters">
     <div class="table-wrap"><div class="state-msg"><div class="spinner"></div><div>Loading recent hot hitters...</div></div></div>
   </div>
@@ -357,13 +352,13 @@
   </div>
 
   <footer>
-    <span>DATA SOURCE: GOOGLE SHEETS / PYBASEBALL / BASEBALL REFERENCE</span>
+    <span>DATA SOURCE: GOOGLE SHEETS / PYBASEBALL</span>
     <span>2026 MLB SEASON</span>
   </footer>
 
 </div>
+
 <script>
-// ── CONFIG ───────────────────────────────────────────────────────────────
 const SHEET_ID = '1PHrPbnG7oB6RFPtOilw0DskShhiD7XL4IP0AAJQLj4k';
 
 const TABS_CONFIG = {
@@ -374,7 +369,6 @@ const TABS_CONFIG = {
   'starters':     { gid: '901126911',  panel: 'panel-starters'      },
   'relievers':    { gid: '413196017',  panel: 'panel-relievers'     },
 };
-// ────────────────────────────────────────────────────────────────────────
 
 let activeTab    = 'hot-hitters';
 let tableData    = {};
@@ -392,7 +386,6 @@ const NUM_COLS = new Set([
 const HIGH_GOOD = new Set(['HR','RBI','OPS','AVG','OBP','SLG','ISO','TrendScore','SB','H','TB','R','BB','XBH','K9','K/BB','KBB','LOB%']);
 const LOW_GOOD  = new Set(['ERA','WHIP','BB9','HR9','FIP_raw','FIP_lite']);
 
-// Fix literal \xNN sequences — e.g. "Acu\xc3\xb1a" → "Acuña"
 function fixEncoding(str) {
   if (typeof str !== 'string' || !str.includes('\\x')) return str;
   try {
@@ -400,16 +393,14 @@ function fixEncoding(str) {
       String.fromCharCode(parseInt(hex, 16))
     );
     return decodeURIComponent(escape(bytes));
-  } catch {
-    return str;
-  }
+  } catch { return str; }
 }
 
 async function fetchSheet(tabKey) {
   const { gid } = TABS_CONFIG[tabKey];
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status} — is the sheet shared publicly?`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const text = await res.text();
   return parseCSV(text);
 }
@@ -453,22 +444,20 @@ function renderTable(tabKey) {
     sorted.sort((a, b) => {
       const na = toNum(a[ci]), nb = toNum(b[ci]);
       if (na !== null && nb !== null) return ss.asc ? na - nb : nb - na;
-      return ss.asc
-        ? String(a[ci]).localeCompare(String(b[ci]))
+      return ss.asc 
+        ? String(a[ci]).localeCompare(String(b[ci])) 
         : String(b[ci]).localeCompare(String(a[ci]));
     });
   }
 
   const q = document.getElementById('search-input').value.toLowerCase();
   const nameIdx = headers.indexOf('Name');
-  const filtered = q
+  const filtered = q 
     ? sorted.filter(r => (r[nameIdx] || '').toLowerCase().includes(q))
     : sorted;
 
   filteredRows[tabKey] = filtered;
-  if (tabKey === activeTab) {
-    document.getElementById('row-count').textContent = filtered.length;
-  }
+  if (tabKey === activeTab) document.getElementById('row-count').textContent = filtered.length;
 
   const colStats = headers.map((h, ci) => {
     if (!NUM_COLS.has(h)) return null;
@@ -487,19 +476,19 @@ function renderTable(tabKey) {
   filtered.forEach(row => {
     html += '<tr>';
     row.forEach((val, ci) => {
-      const h   = headers[ci];
+      const h = headers[ci];
       const num = toNum(val);
-      let cls   = '';
+      let cls = '';
       if (num !== null && colStats[ci]) {
         const { min, max } = colStats[ci];
         const range = max - min;
         if (range > 0) {
           const pct = (num - min) / range;
           if (HIGH_GOOD.has(h)) {
-            if (pct >= 0.95)      cls = 'top-val';
+            if (pct >= 0.95) cls = 'top-val';
             else if (pct >= 0.75) cls = 'good-val';
           } else if (LOW_GOOD.has(h) && num > 0) {
-            if (pct <= 0.05)      cls = 'top-val';
+            if (pct <= 0.05) cls = 'top-val';
             else if (pct <= 0.25) cls = 'good-val';
             else if (pct >= 0.85) cls = 'bad-val';
           }
@@ -527,18 +516,11 @@ function renderTable(tabKey) {
 async function loadTab(tabKey) {
   if (tableData[tabKey]) { renderTable(tabKey); return; }
   const panel = document.getElementById(TABS_CONFIG[tabKey].panel);
-  panel.querySelector('.table-wrap').innerHTML =
-    '<div class="state-msg"><div class="spinner"></div><div>Loading...</div></div>';
   try {
     tableData[tabKey] = await fetchSheet(tabKey);
     renderTable(tabKey);
   } catch (e) {
-    panel.querySelector('.table-wrap').innerHTML =
-      `<div class="state-msg error-msg">
-        <div>⚠ Could not load data</div>
-        <div style="font-size:10px;margin-top:8px">${e.message}</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:6px">Make sure the sheet is shared: Share → Anyone with link → Viewer</div>
-      </div>`;
+    panel.querySelector('.table-wrap').innerHTML = `<div class="state-msg">Error loading data.</div>`;
   }
 }
 
@@ -546,13 +528,11 @@ document.getElementById('tab-bar').addEventListener('click', e => {
   const btn = e.target.closest('.tab');
   if (!btn) return;
   const key = btn.dataset.tab;
-  if (key === activeTab) return;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.table-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(TABS_CONFIG[key].panel).classList.add('active');
   activeTab = key;
-  document.getElementById('row-count').textContent = filteredRows[key] ? filteredRows[key].length : '—';
   loadTab(key);
 });
 
@@ -563,6 +543,7 @@ document.getElementById('search-input').addEventListener('input', () => {
 document.getElementById('last-updated').textContent = new Date().toLocaleDateString('en-US', {
   month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
 });
+
 loadTab('hot-hitters');
 </script>
 </body>
