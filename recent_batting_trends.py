@@ -17,7 +17,10 @@ def upload_to_sheets(df):
         SHEET_ID = "1PHrPbnG7oB6RFPtOilw0DskShhiD7XL4IP0AAJQLj4k" 
         
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        json_file = "logical-contact-467719-v2-eea0bc240cc3.json"
+        json_file = os.environ.get(
+            "GOOGLE_CREDS_PATH",
+            "/etc/secrets/google-credentials.json"
+    )
         
         # New, cleaner way to authenticate
         import gspread
@@ -25,7 +28,7 @@ def upload_to_sheets(df):
         
         # Open by ID is much more reliable than open by name
         sh = gc.open_by_key(SHEET_ID) 
-        worksheet = Recent Hot Hitters
+        worksheet = sh.worksheet("Recent Hot Hitters")
 
         # Clear and update
         worksheet.clear()
