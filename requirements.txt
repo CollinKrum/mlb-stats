@@ -1,0 +1,6 @@
+pandas
+pybaseball
+gspread
+google-auth
+oauth2client
+requests
